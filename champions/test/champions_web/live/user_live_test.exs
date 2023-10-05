@@ -4,6 +4,8 @@ defmodule ChampionsWeb.UserLiveTest do
   import Phoenix.LiveViewTest
   import Champions.AccountsFixtures
 
+  alias Champions.Accounts
+
   defp create_user(_) do
     user = user_fixture()
     %{user: user}
@@ -28,6 +30,8 @@ defmodule ChampionsWeb.UserLiveTest do
 
       assert html =~ "This is a player on this app"
       assert html =~ user.email
+      refute html =~ "I lost to this person"
+      refute html =~ "Declare draw match"
     end
 
     test "redirects to users index with flash message when user does not exist", %{
@@ -39,6 +43,52 @@ defmodule ChampionsWeb.UserLiveTest do
       assert show_live ==
                {:redirect,
                 %{to: "/users", flash: %{"error" => "There is no user with ID invalid-id"}}}
+    end
+  end
+
+  describe "Authenticated Show" do
+    setup [:register_and_log_in_user]
+
+    test "displays my own user but no action buttons", %{conn: conn, user: user} do
+      {:ok, _show_live, html} = live(conn, ~p"/users/#{user}")
+
+      assert html =~ "This is a player on this app"
+      assert html =~ user.email
+      refute html =~ "I lost to this person"
+      refute html =~ "Declare draw match"
+    end
+
+    test "displays another user with action buttons", %{conn: conn, user: _user} do
+      other_user = user_fixture()
+      {:ok, _show_live, html} = live(conn, ~p"/users/#{other_user}")
+
+      assert html =~ "This is a player on this app"
+      assert html =~ other_user.email
+      assert html =~ "I lost to this person"
+      assert html =~ "Declare draw match"
+    end
+
+    test "concede 3 points when I lose to another player", %{conn: conn, user: _user} do
+      other_user = user_fixture()
+      {:ok, show_live, _html} = live(conn, ~p"/users/#{other_user}")
+
+      assert other_user.points == 0
+      assert show_live |> element("button", "I lost to this person") |> render_click()
+      assert element(show_live, "span[data-points]") |> render() =~ "3"
+      assert Accounts.get_user!(other_user.id).points == 3
+    end
+
+    test "concede 1 point to each user when there's a draw match", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      {:ok, show_live, _html} = live(conn, ~p"/users/#{other_user}")
+
+      assert user.points == 0
+      assert other_user.points == 0
+      assert show_live |> element("button", "Declare draw match") |> render_click()
+      assert element(show_live, "span[data-my-points]") |> render() =~ "1"
+      assert element(show_live, "span[data-points]") |> render() =~ "1"
+      assert Accounts.get_user!(user.id).points == 1
+      assert Accounts.get_user!(other_user.id).points == 1
     end
   end
 end

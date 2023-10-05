@@ -81,6 +81,7 @@ defmodule ChampionsWeb.Router do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
       live "/users", UserLive.Index, :index
+      live "/users/:id", UserLive.Show, :show
     end
   end
 end

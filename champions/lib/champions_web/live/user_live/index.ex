@@ -18,7 +18,11 @@ defmodule ChampionsWeb.UserLive.Index do
       Listing Users
     </.header>
 
-    <.table id="users" rows={@streams.users}>
+    <.table
+      id="users"
+      rows={@streams.users}
+      row_click={fn {_id, user} -> JS.navigate(~p"/users/#{user}") end}
+    >
       <:col :let={{_id, user}} label="Email"><%= user.email %></:col>
       <:col :let={{_id, user}} label="Points"><%= user.points %></:col>
     </.table>

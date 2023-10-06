@@ -2,6 +2,7 @@ defmodule ChampionsWeb.UserLive.Show do
   use ChampionsWeb, :live_view
 
   alias Champions.Accounts
+  alias Champions.Ranking
 
   @impl true
   def handle_params(%{"id" => id}, _session, socket) do
@@ -35,8 +36,12 @@ defmodule ChampionsWeb.UserLive.Show do
     {:noreply, put_flash(socket, :error, "You can't give points to yourself")}
   end
 
-  def handle_event("concede_loss", _value, %{assigns: %{user: user}} = socket) do
-    {:ok, updated_user} = Accounts.concede_loss_to(user)
+  def handle_event(
+        "concede_loss",
+        _value,
+        %{assigns: %{current_user: current_user, user: user}} = socket
+      ) do
+    {:ok, updated_user} = Ranking.concede_loss_to(current_user, user)
     {:noreply, assign(socket, :user, updated_user)}
   end
 
@@ -45,7 +50,7 @@ defmodule ChampionsWeb.UserLive.Show do
         _value,
         %{assigns: %{current_user: current_user, user: user}} = socket
       ) do
-    {:ok, updated_my_user, updated_user} = Accounts.declare_draw_match(current_user, user)
+    {:ok, updated_my_user, updated_user} = Ranking.declare_draw_match(current_user, user)
 
     {:noreply,
      socket
